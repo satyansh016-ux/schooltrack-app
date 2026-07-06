@@ -25,10 +25,16 @@ SUPER_ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 SUPER_ADMIN_PASS = os.environ.get("ADMIN_PASS", "admin@2026")
 MAKE_WEBHOOK_URL = os.environ.get("MAKE_WEBHOOK_URL", "")
 
+# â”€â”€ Cost tracker settings (edit these via Render Environment Variables) â”€â”€
+AISENSY_PLAN_FEE     = float(os.environ.get("AISENSY_PLAN_FEE", 1500))     # â‚¹/month
+AISENSY_UTILITY_RATE = float(os.environ.get("AISENSY_UTILITY_RATE", 0.145)) # â‚¹/message
+MAKE_PLAN_FEE        = float(os.environ.get("MAKE_PLAN_FEE", 0))           # â‚¹/month (0 = free tier)
+MAKE_FREE_OPS        = int(os.environ.get("MAKE_FREE_OPS", 1000))          # ops included in free tier
 
-def send_to_make(event_type, data, school=None):
+
+def send_to_make(event_type, data, school=None, recipient_count=1):
     """Fire a webhook to Make.com only for absent-marking and homework events,
-    and record the result in WaLog so it's visible in the WA Log tab."""
+    and record the result (with recipient count, for cost tracking) in WaLog."""
     if not MAKE_WEBHOOK_URL:
         return
     status = "sent"
@@ -40,7 +46,8 @@ def send_to_make(event_type, data, school=None):
     except Exception:
         status = "error"
     if school is not None:
-        log = WaLog(school_id=school.id, phone="(broadcast)", msg_type=f"make_{event_type}",
+        phone_label = "(broadcast)" if recipient_count <= 1 else f"(broadcast) x{recipient_count}"
+        log = WaLog(school_id=school.id, phone=phone_label, msg_type=f"make_{event_type}",
                     message=str(data.get("title") or data.get("student_name") or event_type),
                     status=status)
         db.session.add(log)
@@ -389,7 +396,7 @@ def mark_attendance():
                 "school": school.name, "student_name": st.name,
                 "roll_no": st.roll_no, "parent_name": st.parent_name,
                 "parent_phone": st.parent_phone, "date": str(att_date)
-            }, school=school)
+            }, school=school, recipient_count=1)
         elif rec["status"] in ("L", "Late"):
             msg = (f"Dear {st.parent_name},\n\nAapka bachha *{st.name}* (Roll {st.roll_no}) "
                   f"aaj *LATE* aaya hai.\nðŸ“… {att_date.strftime('%d %b %Y')}\nðŸ« {school.name} ðŸ™")
@@ -536,7 +543,7 @@ def add_homework():
              "parent_name": st.parent_name, "parent_phone": st.parent_phone}
             for st in students
         ]
-    }, school=school)
+    }, school=school, recipient_count=len(students))
 
     return jsonify({"msg": "Homework saved & WA sent", "hw_id": hw.id, "wa_sent": wa_sent}), 201
 
@@ -699,6 +706,60 @@ def admin_login():
 def admin_logout():
     session.pop("is_admin", None)
     return jsonify({"msg": "Admin logged out"})
+
+
+@app.route("/api/admin/costs", methods=["GET"])
+@admin_required
+def admin_costs():
+    import re
+    today = date.today()
+    month_start = today.replace(day=1)
+
+    rows = WaLog.query.filter(
+        WaLog.msg_type.like("make_%"),
+        db.func.date(WaLog.created_at) >= month_start
+    ).all()
+
+    total_events = 0        # number of triggers (absent marks / homework broadcasts)
+    total_recipients = 0    # total individual WhatsApp messages this represents
+    sent_events = 0
+    failed_events = 0
+
+    for r in rows:
+        total_events += 1
+        if r.status == "sent":
+            sent_events += 1
+        else:
+            failed_events += 1
+        m = re.search(r"x(\d+)$", r.phone or "")
+        total_recipients += int(m.group(1)) if m else 1
+
+    aisensy_message_cost = round(total_recipients * AISENSY_UTILITY_RATE, 2)
+    aisensy_total = round(AISENSY_PLAN_FEE + aisensy_message_cost, 2)
+
+    # Rough Make.com operation estimate: 1 webhook trigger + 2 ops per recipient (iterator + HTTP send)
+    make_ops_used = total_events + (total_recipients * 2)
+    make_overage_ops = max(0, make_ops_used - MAKE_FREE_OPS)
+    make_total = MAKE_PLAN_FEE  # overage billing varies by Make plan; shown as ops count instead
+
+    grand_total = round(aisensy_total + make_total, 2)
+
+    return jsonify({
+        "period": month_start.strftime("%b %Y"),
+        "total_events": total_events,
+        "sent_events": sent_events,
+        "failed_events": failed_events,
+        "total_recipients": total_recipients,
+        "aisensy_plan_fee": AISENSY_PLAN_FEE,
+        "aisensy_utility_rate": AISENSY_UTILITY_RATE,
+        "aisensy_message_cost": aisensy_message_cost,
+        "aisensy_total": aisensy_total,
+        "make_ops_used": make_ops_used,
+        "make_free_ops": MAKE_FREE_OPS,
+        "make_overage_ops": make_overage_ops,
+        "make_plan_fee": MAKE_PLAN_FEE,
+        "grand_total": grand_total
+    })
 
 
 @app.route("/api/admin/overview", methods=["GET"])
