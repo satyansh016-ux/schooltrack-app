@@ -10,7 +10,7 @@ from datetime import datetime, date, timedelta
 from functools import wraps
 import requests, os, calendar
 
-app = Flask(name)
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "schooltrack_secret_2026_change_me")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "sqlite:///schooltrack.db"
