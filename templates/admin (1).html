@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SchoolTrack — Super Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0b0e14;--bg2:#11151f;--bg3:#161b27;--bg4:#1d2433;
+  --primary:#6366f1;--primary-d:#4f46e5;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --wh:#f1f5f9;--mu:#8b94a8;--bd:#232a3a;
+  --font:'Segoe UI',Roboto,sans-serif;--r:14px;
+}
+*{font-family:var(--font)}
+body{background:var(--bg);color:var(--wh);min-height:100vh}
+button{cursor:pointer;font-family:var(--font)}
+input,select{font-family:var(--font)}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--bg4)}
+
+/* LOGIN */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,#1a1f35,#0b0e14)}
+#login.hide{display:none}
+.lbox{background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:36px 30px;max-width:380px;width:90%;text-align:center}
+.licon{font-size:42px;margin-bottom:10px}
+.ltitle{font-size:22px;font-weight:800;margin-bottom:3px}
+.ltitle span{color:var(--primary)}
+.lsub{font-size:12px;color:var(--mu);margin-bottom:24px}
+.lf{text-align:left;margin-bottom:13px}
+.lf label{font-size:11px;font-weight:600;color:var(--mu);display:block;margin-bottom:5px}
+.lf input{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;color:var(--wh);font-size:14px;outline:none}
+.lf input:focus{border-color:var(--primary)}
+.lbtn{width:100%;padding:12px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;margin-top:4px}
+.lbtn:hover{background:var(--primary-d)}
+.lerr{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+
+/* SHELL */
+#app{display:none;min-height:100vh}
+#app.show{display:block}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--bd);padding:14px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50}
+.tb-logo{font-size:18px;font-weight:800}
+.tb-logo span{color:var(--primary)}
+.tb-actions{display:flex;gap:8px;align-items:center}
+.tb-btn{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;background:var(--bg3);border:1px solid var(--bd);color:var(--mu)}
+.tb-btn:hover{color:var(--wh);border-color:var(--mu)}
+
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px}
+.scard{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.scard.b::before{background:var(--primary)}.scard.g::before{background:var(--green)}
+.scard.r::before{background:var(--red)}.scard.a::before{background:var(--amber)}
+.sl{font-size:10px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sv{font-size:28px;font-weight:800;line-height:1}
+.sv.b{color:var(--primary)}.sv.g{color:var(--green)}.sv.r{color:var(--red)}.sv.a{color:var(--amber)}
+.ss{font-size:11px;color:var(--mu);margin-top:4px}
+
+.sec-title{font-size:14px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin:24px 0 12px}
+
+/* TABLE */
+.tbl-wrap{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg3);color:var(--mu);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:left;padding:11px 14px}
+td{padding:11px 14px;border-top:1px solid var(--bd)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.sname{font-weight:600}
+.scity{font-size:11px;color:var(--mu)}
+.badge{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.b-active{background:rgba(34,197,94,.12);color:var(--green)}
+.b-trial{background:rgba(245,158,11,.12);color:var(--amber)}
+.b-suspended{background:rgba(239,68,68,.12);color:var(--red)}
+.b-expired{background:rgba(239,68,68,.12);color:var(--red)}
+.b-pro{background:rgba(99,102,241,.15);color:var(--primary)}
+.b-basic{background:var(--bg4);color:var(--mu)}
+.act-btns{display:flex;gap:5px}
+.act-btn{padding:5px 9px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--bd);background:var(--bg3);color:var(--mu)}
+.act-btn:hover{color:var(--wh)}
+.act-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.act-btn.success:hover{border-color:var(--green);color:var(--green)}
+.days-warn{color:var(--amber);font-weight:700}
+.days-danger{color:var(--red);font-weight:700}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal-ov.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:24px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;justify-content:space-between}
+.modal-close{background:none;border:none;color:var(--mu);font-size:20px;cursor:pointer}
+.mf{margin-bottom:12px}
+.mf label{font-size:11px;font-weight:600;color:var(--mu);display:block;margin-bottom:5px}
+.mf input,.mf select,.mf textarea{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--wh);font-size:13px;outline:none}
+.mf input:focus,.mf select:focus{border-color:var(--primary)}
+.mbtn{width:100%;padding:11px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:13px;margin-top:6px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--primary);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;opacity:0;transition:.3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}
+
+.mobile-card{display:none;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px}
+@media(max-width:768px){
+  .tbl-wrap{display:none}
+  .mobile-card{display:block}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="lbox">
+    <div class="licon">🏢</div>
+    <div class="ltitle">Super<span> Admin</span></div>
+    <div class="lsub">SchoolTrack Pro — Business Control Panel</div>
+    <div class="lf"><label>Admin Username</label><input id="a-user" placeholder="admin"></div>
+    <div class="lf"><label>Admin Password</label><input id="a-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <button class="lbtn" onclick="adminLogin()">Login to Admin Panel →</button>
+    <div class="lerr" id="a-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-logo">Super<span>Admin</span></div>
+    <div class="tb-actions">
+      <button class="tb-btn" onclick="loadOverview()">🔄 Refresh</button>
+      <button class="tb-btn" onclick="window.open('/','_blank')">🏫 School App</button>
+      <button class="tb-btn" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="stats" id="overview-stats"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="sec-title" style="margin:0">💰 Cost Tracker <span id="cost-period" style="color:var(--mu);font-weight:400;text-transform:none"></span></div>
+      <button class="act-btn" onclick="loadCosts()">🔄</button>
+    </div>
+    <div class="stats" id="cost-stats"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="sec-title" style="margin:0">📧 Principal Email Alerts (8+ absent)</div>
+      <button class="act-btn" onclick="loadPrincipalAlerts()">🔄</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>School</th><th>Principal Email</th><th>Detail</th><th>Sent At</th></tr></thead>
+        <tbody id="principal-alerts-body"></tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="sec-title" style="margin:0">All Schools</div>
+      <button class="act-btn" onclick="loadSchools()">🔄</button>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>School</th><th>Plan</th><th>Status</th><th>Students</th><th>Expiry</th><th>Fee</th><th>Actions</th></tr></thead>
+        <tbody id="schools-tbody"></tbody>
+      </table>
+    </div>
+    <div id="schools-mobile"></div>
+  </div>
+</div>
+
+<!-- EDIT SCHOOL MODAL -->
+<div class="modal-ov" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title"><span id="modal-school-name">School</span><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="mf"><label>Status</label>
+      <select id="m-status"><option value="trial">Trial</option><option value="active">Active</option><option value="suspended">Suspended</option><option value="expired">Expired</option></select>
+    </div>
+    <div class="mf"><label>Plan</label>
+      <select id="m-plan"><option value="basic">Basic</option><option value="pro">Pro</option></select>
+    </div>
+    <div class="mf"><label>Monthly Fee (₹)</label><input id="m-fee" type="number"></div>
+    <div class="mf"><label>Expiry Date</label><input id="m-expiry" type="date"></div>
+    <div class="mf"><label>Principal Email (absent alerts)</label><input id="m-principal-email" type="email" placeholder="principal@school.com"></div>
+    <div class="mf"><label>Notes</label><textarea id="m-notes" rows="2" placeholder="Internal notes about this client..."></textarea></div>
+    <button class="mbtn" onclick="saveSchoolEdit()">Save Changes</button>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="act-btn success" style="flex:1;padding:9px" onclick="extendSub(30)">+30 days</button>
+      <button class="act-btn" style="flex:1;padding:9px" onclick="resetPass()">Reset Password</button>
+      <button class="act-btn danger" style="flex:1;padding:9px" onclick="deleteSchoolConfirm()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var currentSchoolId = null;
+var schoolsCache = [];
+
+window.onload = function() {
+  api('/api/admin/overview').then(function(d) {
+    if (d && !d.error) { showApp(); }
+  });
+};
+
+async function api(url, method, body) {
+  method = method || 'GET';
+  var opts = { method: method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  try { var r = await fetch(url, opts); return await r.json(); }
+  catch(e) { return null; }
+}
+
+async function adminLogin() {
+  var user = document.getElementById('a-user').value.trim();
+  var pass = document.getElementById('a-pass').value.trim();
+  var d = await api('/api/admin/login','POST',{username:user,password:pass});
+  if (d && d.msg) { showApp(); }
+  else { document.getElementById('a-err').textContent = (d&&d.error)||'Login failed'; }
+}
+
+async function adminLogout() {
+  await api('/api/admin/logout','POST');
+  document.getElementById('login').classList.remove('hide');
+  document.getElementById('app').classList.remove('show');
+}
+
+function showApp() {
+  document.getElementById('login').classList.add('hide');
+  document.getElementById('app').classList.add('show');
+  loadOverview();
+  loadSchools();
+  loadCosts();
+  loadPrincipalAlerts();
+}
+
+async function loadPrincipalAlerts() {
+  var rows = await api('/api/admin/principal-alerts');
+  var body = document.getElementById('principal-alerts-body');
+  if (!rows || !rows.length) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--mu);padding:20px">Abhi tak koi alert nahi bheja gaya</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(function(r) {
+    return '<tr><td>'+r.school+'</td><td>'+(r.principal_email||'<span style="color:var(--red)">not set</span>')+'</td><td>'+r.detail+'</td><td>'+r.sent_at+'</td></tr>';
+  }).join('');
+}
+
+async function loadCosts() {
+  var d = await api('/api/admin/costs');
+  if (!d) return;
+  document.getElementById('cost-period').textContent = '('+d.period+')';
+  var el = document.getElementById('cost-stats');
+  el.innerHTML =
+    '<div class="scard b"><div class="sl">Messages Sent</div><div class="sv b">'+d.total_recipients+'</div><div class="ss">'+d.total_events+' events · '+d.failed_events+' failed</div></div>'+
+    '<div class="scard g"><div class="sl">AiSensy Message Cost</div><div class="sv g">₹'+d.aisensy_message_cost.toLocaleString('en-IN')+'</div><div class="ss">@ ₹'+d.aisensy_utility_rate+' per msg</div></div>'+
+    '<div class="scard a"><div class="sl">AiSensy Plan Fee</div><div class="sv a">₹'+d.aisensy_plan_fee.toLocaleString('en-IN')+'</div><div class="ss">Fixed monthly</div></div>'+
+    '<div class="scard b"><div class="sl">Make.com Ops Used</div><div class="sv b">'+d.make_ops_used+'</div><div class="ss">of '+d.make_free_ops+' free/mo'+(d.make_overage_ops>0?' · '+d.make_overage_ops+' over':'')+'</div></div>'+
+    '<div class="scard r"><div class="sl">Est. Total This Month</div><div class="sv r">₹'+d.grand_total.toLocaleString('en-IN')+'</div><div class="ss">AiSensy + Make.com</div></div>';
+}
+
+async function loadOverview() {
+  var d = await api('/api/admin/overview');
+  if (!d) return;
+  var el = document.getElementById('overview-stats');
+  el.innerHTML =
+    '<div class="scard b"><div class="sl">Total Schools</div><div class="sv b">'+d.total_schools+'</div><div class="ss">'+d.active_schools+' active, '+d.trial_schools+' trial</div></div>'+
+    '<div class="scard g"><div class="sl">Monthly Revenue</div><div class="sv g">₹'+d.monthly_revenue.toLocaleString('en-IN')+'</div><div class="ss">From active schools</div></div>'+
+    '<div class="scard b"><div class="sl">Total Students</div><div class="sv b">'+d.total_students+'</div><div class="ss">Across all schools</div></div>'+
+    '<div class="scard g"><div class="sl">WA Sent Today</div><div class="sv g">'+d.wa_sent_today+'</div><div class="ss">All schools combined</div></div>'+
+    '<div class="scard a"><div class="sl">Homework Today</div><div class="sv a">'+d.homework_today+'</div></div>'+
+    '<div class="scard r"><div class="sl">Suspended</div><div class="sv r">'+d.suspended_schools+'</div></div>'+
+    '<div class="scard a"><div class="sl">Expiring Soon</div><div class="sv a">'+d.expiring_soon+'</div><div class="ss">Next 7 days</div></div>'+
+    '<div class="scard b"><div class="sl">Marked Today</div><div class="sv b">'+d.schools_marked_attendance_today+'</div><div class="ss">Schools active today</div></div>';
+}
+
+async function loadSchools() {
+  var schools = await api('/api/admin/schools');
+  if (!schools) return;
+  schoolsCache = schools;
+
+  var tbody = document.getElementById('schools-tbody');
+  var mobile = document.getElementById('schools-mobile');
+  tbody.innerHTML = ''; mobile.innerHTML = '';
+
+  schools.forEach(function(s) {
+    var daysClass = s.days_left <= 3 ? 'days-danger' : s.days_left <= 7 ? 'days-warn' : '';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><div class="sname">'+s.name+'</div><div class="scity">'+s.city+' · @'+s.username+'</div></td>'+
+      '<td><span class="badge b-'+s.plan+'">'+s.plan.toUpperCase()+'</span></td>'+
+      '<td><span class="badge b-'+s.status+'">'+s.status.toUpperCase()+'</span></td>'+
+      '<td>'+s.students+'</td>'+
+      '<td class="'+daysClass+'">'+s.expiry_date+' ('+s.days_left+'d)</td>'+
+      '<td>₹'+s.monthly_fee+'</td>'+
+      '<td><div class="act-btns">'+
+        '<button class="act-btn" onclick="openEdit('+s.id+')">Edit</button>'+
+        '<button class="act-btn success" onclick="quickExtend('+s.id+')">+30d</button>'+
+      '</div></td>';
+    tbody.appendChild(tr);
+
+    var card = document.createElement('div'); card.className = 'mobile-card';
+    card.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
+      '<div><div class="sname">'+s.name+'</div><div class="scity">'+s.city+' · @'+s.username+'</div></div>'+
+      '<span class="badge b-'+s.status+'">'+s.status.toUpperCase()+'</span></div>'+
+      '<div style="display:flex;gap:12px;font-size:12px;color:var(--mu);margin-bottom:10px">'+
+      '<span>👥 '+s.students+' students</span><span class="'+daysClass+'">⏰ '+s.days_left+'d left</span><span>₹'+s.monthly_fee+'/mo</span></div>'+
+      '<div class="act-btns"><button class="act-btn" style="flex:1" onclick="openEdit('+s.id+')">Edit</button>'+
+      '<button class="act-btn success" style="flex:1" onclick="quickExtend('+s.id+')">+30 days</button></div>';
+    mobile.appendChild(card);
+  });
+}
+
+function openEdit(sid) {
+  var s = schoolsCache.find(function(x){return x.id===sid;});
+  if (!s) return;
+  currentSchoolId = sid;
+  document.getElementById('modal-school-name').textContent = s.name;
+  document.getElementById('m-status').value = s.status;
+  document.getElementById('m-plan').value   = s.plan;
+  document.getElementById('m-fee').value    = s.monthly_fee;
+  document.getElementById('m-expiry').value = s.expiry_date;
+  document.getElementById('m-principal-email').value = s.principal_email || '';
+  document.getElementById('m-notes').value  = '';
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('edit-modal').classList.remove('show'); }
+
+async function saveSchoolEdit() {
+  var d = await api('/api/admin/schools/'+currentSchoolId, 'PUT', {
+    status: document.getElementById('m-status').value,
+    plan: document.getElementById('m-plan').value,
+    monthly_fee: parseInt(document.getElementById('m-fee').value),
+    expiry_date: document.getElementById('m-expiry').value,
+    principal_email: document.getElementById('m-principal-email').value.trim(),
+    notes: document.getElementById('m-notes').value
+  });
+  if (d && d.msg) {
+    toast('School updated ✓', 'success');
+    closeModal();
+    loadSchools();
+    loadOverview();
+  }
+}
+
+async function quickExtend(sid) {
+  var d = await api('/api/admin/schools/'+sid+'/extend', 'POST', {days: 30});
+  if (d && d.msg) { toast('Extended 30 days ✓', 'success'); loadSchools(); loadOverview(); }
+}
+
+async function extendSub(days) {
+  var d = await api('/api/admin/schools/'+currentSchoolId+'/extend', 'POST', {days: days});
+  if (d && d.msg) { toast('Extended '+days+' days ✓','success'); closeModal(); loadSchools(); }
+}
+
+async function resetPass() {
+  var newPass = prompt('Enter new password for this school:', 'school@123');
+  if (!newPass) return;
+  var d = await api('/api/admin/schools/'+currentSchoolId+'/reset-password', 'POST', {new_password: newPass});
+  if (d && d.msg) { toast('Password reset to: '+newPass, 'success'); }
+}
+
+async function deleteSchoolConfirm() {
+  if (!confirm('PERMANENTLY delete this school and ALL its data? This cannot be undone!')) return;
+  var d = await api('/api/admin/schools/'+currentSchoolId, 'DELETE');
+  if (d && d.msg) { toast('School deleted','success'); closeModal(); loadSchools(); loadOverview(); }
+}
+
+function toast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type?' '+type:'');
+  setTimeout(function(){ t.className='toast'; }, 3000);
+}
+</script>
+</body>
+</html>
