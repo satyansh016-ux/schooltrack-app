@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a73e8">
+<title>Notices & Events — SchoolTrack</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#1a73e8;--primary-dark:#1557b0;--primary-light:#e8f0fe;
+  --green:#34a853;--red:#ea4335;--amber:#fbbc04;
+  --bg:#f8f9fa;--card:#fff;--border:#e0e0e0;--text:#202124;--muted:#5f6368;
+  --font:'Segoe UI',Roboto,sans-serif;--r:12px;--shadow:0 2px 8px rgba(0,0,0,.1);
+}
+*{font-family:var(--font)}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+button{cursor:pointer;font-family:var(--font)}
+input,textarea{font-family:var(--font)}
+
+#not-logged{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a73e8,#0d47a1);padding:16px;text-align:center}
+.card{background:#fff;border-radius:20px;padding:32px 26px;max-width:360px;color:var(--text)}
+.card a{color:var(--primary);font-weight:700;text-decoration:none}
+
+#app{display:none;max-width:520px;margin:0 auto;min-height:100vh}
+#app.show{display:block}
+.topbar{background:var(--primary);color:#fff;padding:14px 18px;position:sticky;top:0;display:flex;justify-content:space-between;align-items:center}
+.tb-title{font-size:16px;font-weight:800}
+.back-link{color:#fff;font-size:12px;opacity:.9;text-decoration:none}
+
+.wrap{padding:16px}
+.add-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:18px;box-shadow:var(--shadow)}
+.add-card h3{font-size:14px;margin-bottom:12px}
+.fg{margin-bottom:10px}
+.fg label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.fg input,.fg textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none}
+.fg input:focus,.fg textarea:focus{border-color:var(--primary)}
+.btn{width:100%;padding:12px;border-radius:9px;background:var(--primary);color:#fff;border:none;font-size:14px;font-weight:700}
+.btn:hover{background:var(--primary-dark)}
+.msg{font-size:12px;margin-top:8px;min-height:16px}
+.msg.ok{color:var(--green)}
+.msg.err{color:var(--red)}
+
+.n-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);position:relative}
+.n-date{display:inline-block;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:6px}
+.n-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.n-desc{font-size:13px;color:var(--muted);line-height:1.4}
+.del-btn{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--red);font-size:12px;font-weight:600}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:30px 20px}
+</style>
+</head>
+<body>
+
+<div id="not-logged">
+  <div class="card">
+    <div style="font-size:40px;margin-bottom:8px">🔒</div>
+    <h2 style="margin-bottom:8px">Login zaroori hai</h2>
+    <p style="font-size:13px;color:#5f6368;margin-bottom:16px">Notices manage karne ke liye pehle apni SchoolTrack app mein login karein.</p>
+    <a href="/">← Login page par jayein</a>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="tb-title">📢 Notices & Events</div>
+    <a href="/" class="back-link">← Dashboard</a>
+  </div>
+
+  <div class="wrap">
+    <div class="add-card">
+      <h3>Naya Notice / Event Add Karein</h3>
+      <div class="fg"><label>Title</label><input id="n-title" placeholder="jaise: Diwali Holiday"></div>
+      <div class="fg"><label>Details (optional)</label><textarea id="n-desc" rows="2" placeholder="Extra jaankari..."></textarea></div>
+      <div class="fg"><label>Date (optional — general notice ke liye khali chhodein)</label><input id="n-date" type="date"></div>
+      <button class="btn" onclick="addNotice()">+ Add Notice</button>
+      <div class="msg" id="n-msg"></div>
+    </div>
+
+    <div id="notices-list"></div>
+  </div>
+</div>
+
+<script>
+async function api(url, method, body) {
+  var opts = { method: method || 'GET', headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  try { var r = await fetch(url, opts); return { ok: r.ok, data: await r.json() }; }
+  catch(e) { return { ok: false, data: null }; }
+}
+
+window.onload = async function() {
+  var me = await api('/api/me');
+  if (me.ok && me.data && me.data.school_id) {
+    document.getElementById('not-logged').style.display = 'none';
+    document.getElementById('app').classList.add('show');
+    loadNotices();
+  }
+};
+
+async function addNotice() {
+  var title = document.getElementById('n-title').value.trim();
+  var desc = document.getElementById('n-desc').value.trim();
+  var eventDate = document.getElementById('n-date').value;
+  var msgEl = document.getElementById('n-msg');
+  if (!title) { msgEl.className = 'msg err'; msgEl.textContent = 'Title zaroori hai'; return; }
+
+  var res = await api('/api/notices', 'POST', { title: title, description: desc, event_date: eventDate || null });
+  if (res.ok) {
+    msgEl.className = 'msg ok'; msgEl.textContent = '✅ Notice add ho gaya';
+    document.getElementById('n-title').value = '';
+    document.getElementById('n-desc').value = '';
+    document.getElementById('n-date').value = '';
+    loadNotices();
+  } else {
+    msgEl.className = 'msg err'; msgEl.textContent = (res.data && res.data.error) || 'Kuch galat hua';
+  }
+}
+
+async function loadNotices() {
+  var res = await api('/api/notices');
+  var el = document.getElementById('notices-list');
+  if (!res.ok || !res.data || !res.data.length) {
+    el.innerHTML = '<div class="empty">Abhi tak koi notice add nahi kiya</div>';
+    return;
+  }
+  el.innerHTML = res.data.map(function(n) {
+    return '<div class="n-card">'+
+      (n.event_date ? '<span class="n-date">📅 '+n.event_date+'</span>' : '<span class="n-date">📢 General Notice</span>')+
+      '<button class="del-btn" onclick="delNotice('+n.id+')">Delete</button>'+
+      '<div class="n-title">'+n.title+'</div>'+
+      (n.description ? '<div class="n-desc">'+n.description+'</div>' : '')+
+    '</div>';
+  }).join('');
+}
+
+async function delNotice(id) {
+  if (!confirm('Ye notice delete karna hai?')) return;
+  await api('/api/notices/'+id, 'DELETE');
+  loadNotices();
+}
+</script>
+</body>
+</html>
