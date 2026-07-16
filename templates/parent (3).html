@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a73e8">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>Parent Portal — SchoolTrack</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#1a73e8;--primary-dark:#1557b0;--primary-light:#e8f0fe;
+  --green:#34a853;--red:#ea4335;--amber:#fbbc04;
+  --bg:#f8f9fa;--card:#fff;--border:#e0e0e0;--text:#202124;--muted:#5f6368;
+  --font:'Segoe UI',Roboto,sans-serif;--r:12px;--shadow:0 2px 8px rgba(0,0,0,.1);
+}
+*{font-family:var(--font)}
+body{background:var(--bg);color:var(--text);min-height:100vh}
+button{cursor:pointer;font-family:var(--font)}
+input{font-family:var(--font)}
+
+/* LOGIN */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a73e8,#0d47a1);z-index:1000;padding:16px}
+#login.hide{display:none}
+.card{background:#fff;border-radius:22px;padding:32px 26px;max-width:380px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.2);text-align:center}
+.icon{font-size:44px;margin-bottom:8px}
+.title{font-size:22px;font-weight:800;color:#1a73e8;margin-bottom:4px}
+.sub{font-size:12px;color:var(--muted);margin-bottom:24px}
+.fg{margin-bottom:13px;text-align:left}
+.fg label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.fg input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--r);font-size:14px;outline:none}
+.fg input:focus{border-color:var(--primary)}
+.btn{width:100%;padding:13px;border-radius:var(--r);background:var(--primary);color:#fff;border:none;font-size:14px;font-weight:700;margin-top:4px}
+.btn:hover{background:var(--primary-dark)}
+.err{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+.hint{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh;max-width:480px;margin:0 auto}
+#app.show{display:flex}
+.topbar{background:var(--primary);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0}
+.tb-name{font-size:16px;font-weight:800}
+.tb-sub{font-size:11px;opacity:.85}
+.logout-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:600}
+
+.tabs{display:flex;background:#fff;border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:12px;border:none;background:none;color:var(--muted);font-size:13px;font-weight:600;border-bottom:2px solid transparent}
+.tab.on{color:var(--primary);border-bottom-color:var(--primary)}
+
+.wrap{padding:16px}
+.hw-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.hw-subj{display:inline-block;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:6px}
+.hw-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.hw-desc{font-size:13px;color:var(--muted);line-height:1.4;margin-bottom:8px}
+.hw-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px}
+
+.att-summary{display:flex;gap:10px;margin-bottom:14px}
+.att-box{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.att-num{font-size:24px;font-weight:800}
+.att-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+.att-row{display:flex;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;font-size:13px}
+.badge{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.b-p{background:rgba(52,168,83,.12);color:var(--green)}
+.b-a{background:rgba(234,67,53,.12);color:var(--red)}
+.b-l{background:rgba(251,188,4,.12);color:#b06e00}
+.date-search{display:flex;gap:8px;margin-bottom:14px}
+.date-search input{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:13px}
+.date-search button{padding:0 16px;border-radius:9px;background:var(--primary);color:#fff;border:none;font-weight:700;font-size:13px}
+.date-result{padding:12px 14px;border-radius:9px;margin-bottom:14px;font-size:13px;font-weight:600;display:none}
+.date-result.show{display:block}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <div class="icon">👨‍👩‍👧</div>
+    <div class="title">Parent Portal</div>
+    <div class="sub">Apne bachhe ka homework & attendance dekhein</div>
+    <div class="fg"><label>School ID</label><input id="p-school" placeholder="jaise: Agrasen-Dhule"></div>
+    <div class="fg"><label>Roll Number</label><input id="p-roll" placeholder="Bachhe ka roll number"></div>
+    <div class="fg"><label>Password</label><input id="p-pass" type="password" placeholder="Aapke registered phone ke last 4 digit" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn" onclick="doLogin()">Login →</button>
+    <div class="err" id="p-err"></div>
+    <div class="hint">Password = aapke registered mobile number ke aakhri 4 digit.<br>School ID school ne diya hoga.</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="tb-name" id="s-name">Student</div>
+      <div class="tb-sub" id="s-meta">Class · School</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-hw" onclick="showTab('hw')">📚 Homework</button>
+    <button class="tab" id="tab-att" onclick="showTab('att')">📅 Attendance</button>
+    <button class="tab" id="tab-notices" onclick="showTab('notices')">📢 Notices</button>
+  </div>
+
+  <div class="wrap" id="view-hw"></div>
+  <div class="wrap" id="view-att" style="display:none"></div>
+  <div class="wrap" id="view-notices" style="display:none"></div>
+</div>
+
+<script>
+async function api(url, method, body) {
+  var opts = { method: method || 'GET', headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  try { var r = await fetch(url, opts); return await r.json(); } catch(e) { return null; }
+}
+
+window.onload = function() {
+  api('/api/parent/me').then(function(d) {
+    if (d && d.name) { showApp(d); }
+  });
+};
+
+async function doLogin() {
+  var d = await api('/api/parent/login', 'POST', {
+    school_username: document.getElementById('p-school').value.trim(),
+    roll_no: document.getElementById('p-roll').value.trim(),
+    password: document.getElementById('p-pass').value.trim()
+  });
+  if (d && d.student) { showApp(d.student); }
+  else { document.getElementById('p-err').textContent = (d && d.error) || 'Login failed'; }
+}
+
+async function doLogout() {
+  await api('/api/parent/logout', 'POST');
+  document.getElementById('login').classList.remove('hide');
+  document.getElementById('app').classList.remove('show');
+}
+
+function showApp(s) {
+  document.getElementById('login').classList.add('hide');
+  document.getElementById('app').classList.add('show');
+  document.getElementById('s-name').textContent = s.name;
+  document.getElementById('s-meta').textContent = (s.class_name||'') + ' · ' + (s.school_name||'');
+  loadHomework();
+  loadAttendance();
+  loadNotices();
+  setupPushNotifications();
+}
+
+function urlBase64ToUint8Array(base64String) {
+  var padding = '='.repeat((4 - base64String.length % 4) % 4);
+  var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  var rawData = window.atob(base64);
+  var outputArray = new Uint8Array(rawData.length);
+  for (var i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function setupPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    var reg = await navigator.serviceWorker.register('/static/sw.js');
+    var existing = await reg.pushManager.getSubscription();
+    if (existing) { await api('/api/parent/push-subscribe', 'POST', existing.toJSON()); return; }
+
+    if (Notification.permission === 'denied') return;
+    var permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    var keyRes = await api('/api/parent/vapid-public-key');
+    if (!keyRes || !keyRes.key) return;
+
+    var sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(keyRes.key)
+    });
+    await api('/api/parent/push-subscribe', 'POST', sub.toJSON());
+  } catch (e) { /* push not available/allowed — fail silently */ }
+}
+
+function showTab(t) {
+  document.getElementById('tab-hw').className = 'tab' + (t==='hw' ? ' on' : '');
+  document.getElementById('tab-att').className = 'tab' + (t==='att' ? ' on' : '');
+  document.getElementById('tab-notices').className = 'tab' + (t==='notices' ? ' on' : '');
+  document.getElementById('view-hw').style.display = t==='hw' ? 'block' : 'none';
+  document.getElementById('view-att').style.display = t==='att' ? 'block' : 'none';
+  document.getElementById('view-notices').style.display = t==='notices' ? 'block' : 'none';
+}
+
+var CATEGORY_ICON = { general: '📢', fee: '💰', exam: '📝', result: '🏆', emergency: '🚨' };
+var CATEGORY_LABEL = { general: 'Notice', fee: 'Fee Reminder', exam: 'Exam Timetable', result: 'Result', emergency: 'Emergency' };
+
+async function loadNotices() {
+  var rows = await api('/api/parent/notices');
+  var el = document.getElementById('view-notices');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty">Abhi tak koi notice/event nahi hai</div>'; return; }
+  el.innerHTML = rows.map(function(n) {
+    var cat = n.category || 'general';
+    var icon = CATEGORY_ICON[cat] || '📢';
+    var label = CATEGORY_LABEL[cat] || 'Notice';
+    var amountLine = (cat === 'fee' && n.amount) ? '<div class="hw-desc" style="font-weight:700;color:var(--red)">Amount: ₹'+n.amount+'</div>' : '';
+    return '<div class="hw-card">'+
+      '<span class="hw-subj">'+icon+' '+label+(n.event_date ? ' · '+n.event_date : '')+'</span>'+
+      '<div class="hw-title">'+n.title+'</div>'+
+      (n.description ? '<div class="hw-desc">'+n.description+'</div>' : '')+
+      amountLine+
+    '</div>';
+  }).join('');
+}
+
+async function loadHomework() {
+  var rows = await api('/api/parent/homework');
+  var el = document.getElementById('view-hw');
+  if (!rows || !rows.length) { el.innerHTML = '<div class="empty">Abhi tak koi homework assign nahi hua</div>'; return; }
+  el.innerHTML = rows.map(function(h) {
+    return '<div class="hw-card">'+
+      '<span class="hw-subj">'+h.subject+'</span>'+
+      '<div class="hw-title">'+h.title+'</div>'+
+      '<div class="hw-desc">'+(h.description||'')+'</div>'+
+      '<div class="hw-meta"><span>Assigned: '+h.assigned_on+'</span><span>Due: '+(h.due_date||'—')+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+
+var allAttendanceRecords = [];
+
+async function loadAttendance() {
+  var d = await api('/api/parent/attendance');
+  var el = document.getElementById('view-att');
+  if (!d) { el.innerHTML = '<div class="empty">Data load nahi ho paya</div>'; return; }
+  allAttendanceRecords = d.records || [];
+
+  var search = '<div class="date-search">'+
+    '<input type="date" id="check-date">'+
+    '<button onclick="checkDate()">Check</button>'+
+  '</div>'+
+  '<div class="date-result" id="date-result"></div>';
+
+  var summary = '<div class="att-summary">'+
+    '<div class="att-box"><div class="att-num" style="color:var(--green)">'+d.present+'</div><div class="att-lbl">Present</div></div>'+
+    '<div class="att-box"><div class="att-num" style="color:var(--primary)">'+d.pct+'%</div><div class="att-lbl">Attendance</div></div>'+
+    '<div class="att-box"><div class="att-num">'+d.total+'</div><div class="att-lbl">Total Days</div></div>'+
+  '</div>';
+  var rows = allAttendanceRecords.map(function(r) {
+    var cls = r.status==='P'||r.status==='Present' ? 'b-p' : r.status==='A'||r.status==='Absent' ? 'b-a' : 'b-l';
+    var lbl = r.status==='P'||r.status==='Present' ? 'Present' : r.status==='A'||r.status==='Absent' ? 'Absent' : 'Late';
+    return '<div class="att-row"><span>'+r.date+'</span><span class="badge '+cls+'">'+lbl+'</span></div>';
+  }).join('');
+  el.innerHTML = search + summary + (rows || '<div class="empty">Abhi tak koi attendance record nahi</div>');
+}
+
+function checkDate() {
+  var picked = document.getElementById('check-date').value; // YYYY-MM-DD
+  var box = document.getElementById('date-result');
+  if (!picked) return;
+  var d = new Date(picked + 'T00:00:00');
+  var formatted = d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  var match = allAttendanceRecords.find(function(r) { return r.date === formatted; });
+  box.className = 'date-result show';
+  if (!match) {
+    box.style.background = 'var(--primary-light)'; box.style.color = 'var(--muted)';
+    box.textContent = formatted + ' ko koi record nahi mila (holiday ho sakta hai, ya bahut purani date).';
+  } else if (match.status === 'P' || match.status === 'Present') {
+    box.style.background = 'rgba(52,168,83,.12)'; box.style.color = 'var(--green)';
+    box.textContent = '✅ ' + formatted + ' ko bachha PRESENT tha.';
+  } else if (match.status === 'A' || match.status === 'Absent') {
+    box.style.background = 'rgba(234,67,53,.12)'; box.style.color = 'var(--red)';
+    box.textContent = '❌ ' + formatted + ' ko bachha ABSENT tha.';
+  } else {
+    box.style.background = 'rgba(251,188,4,.12)'; box.style.color = '#b06e00';
+    box.textContent = '⏰ ' + formatted + ' ko bachha LATE aaya tha.';
+  }
+}
+</script>
+</body>
+</html>
